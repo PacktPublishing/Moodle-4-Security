@@ -1,0 +1,38 @@
+# This file is a template, and will need editing before it works on your project.
+variables:
+  TARGET_DIR: /var/www/staging.mymoodle.org/public_html
+  BACKUP_DIR: /var/www/staging.mymoodle.org/backup_html
+
+stages:
+  - stage1
+  - stage2
+
+deploy:
+  stage: stage1
+  tags: 
+    - MyMoodle
+    - staging
+  script:
+    - echo "Repository checked out to $CI_PROJECT_DIR"
+    - echo "Backing up public_html folder"
+    - rm -rf $BACKUP_DIR
+    - mv $TARGET_DIR $BACKUP_DIR
+    - echo "Copy checked out files to target"
+    - cp -r $CI_PROJECT_DIR/. $TARGET_DIR
+    - echo "Restoring configuration"
+    - cp $BACKUP_DIR/config.php $TARGET_DIR
+    - echo "Fixing directory permissions"
+    - find $TARGET_DIR -type d -exec chmod 0755 {} +
+    - echo "Fixing file permissions"
+    - find $TARGET_DIR -type f -exec chmod 0644 {} +
+    - echo "Remove .git folder"
+    - rm -rf $TARGET_DIR/.git
+
+upgrade:
+  stage: stage2
+  tags: 
+    - MyMoodle
+    - staging
+  script:
+    - echo "Perform upgrade"
+    - /usr/bin/php $TARGET_DIR/admin/cli/upgrade.php --non-interactive
